@@ -1,0 +1,49 @@
+name: Deploy Fake Service
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to deploy (e.g. v2.0.0)'
+        required: true
+        default: 'v2.0.0'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Update version in rollout manifest
+      run: |
+        sed -i "s/version=v[0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*/version=${{ github.event.inputs.version }}/g" manifests/rollout.yaml
+        echo "--- Updated rollout.yaml ---"
+        grep "text=" manifests/rollout.yaml
+
+    - name: Commit and push
+      run: |
+        git config user.name "github-actions[bot]"
+        git config user.email "github-actions[bot]@users.noreply.github.com"
+        git add manifests/rollout.yaml
+        git commit -m "deploy: ${{ github.event.inputs.version }}"
+        git push
+
+    - name: Annotate Grafana deployment
+      run: |
+        TIMESTAMP=$(date +%s)000
+        RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" -X POST \
+          "https://lavenderbanana274.grafana.net/api/annotations" \
+          -H "Authorization: Bearer ${{ secrets.GRAFANA_TOKEN }}" \
+          -H "Content-Type: application/json" \
+          -d "{
+            \"time\": ${TIMESTAMP},
+            \"text\": \"Deployed fake-service ${{ github.event.inputs.version }} (canary started)\",
+            \"tags\": [\"deployment\", \"fake-service\", \"${{ github.event.inputs.version }}\", \"canary\"]
+          }")
+        echo "Grafana annotation HTTP status: $RESPONSE"
+        if [ "$RESPONSE" != "200" ]; then
+          echo "Warning: Grafana annotation failed (HTTP $RESPONSE) — deployment continues"
+        fi
