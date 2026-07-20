@@ -15,12 +15,12 @@ spec:
     spec:
       containers:
       - name: fake-service
-        image: hashicorp/http-echo:0.2.3
-        args:
-        - "-text=service=fake-service version=v1.0.0 status=stable"
-        - "-listen=:5678"
+        image: traefik/whoami:latest
+        env:
+        - name: VERSION
+          value: "v1.0.0"
         ports:
-        - containerPort: 5678
+        - containerPort: 80
         resources:
           requests:
             cpu: 10m
