@@ -18,7 +18,7 @@ spec:
         image: traefik/whoami:latest
         env:
         - name: VERSION
-          value: "v1.0.0"
+          value: "v2.0.0"
         ports:
         - containerPort: 80
         resources:
