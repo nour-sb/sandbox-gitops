@@ -15,10 +15,10 @@ spec:
     spec:
       containers:
       - name: fake-service
-        image: traefik/whoami:latest
+        image: traefik/whoami:v5.0.0-bad-does-not-exist
         env:
         - name: VERSION
-          value: "v2.0.0"
+          value: "v5.0.0-bad"
         ports:
         - containerPort: 80
         resources:
