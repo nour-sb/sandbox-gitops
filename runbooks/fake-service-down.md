@@ -6,63 +6,43 @@ MTTR: 5 min | Pre-approved | Impact: all fake-service HTTP traffic
 
 - Deployed via GitOps from this repo (`nour-sb/sandbox-gitops`, branch: `main`)
 - Canary rollout: 25% → 50% → 100% (60s pause each step), managed by Argo Rollouts
-- 4 replicas split between stable + canary pods during rollout
+- 4 replicas, NodePort :30080
 - Argo CD auto-syncs every 3 min from this repo
-- **Versioning convention**: tags follow semver — `vMAJOR.MINOR.PATCH` (e.g. `v1.0.0`, `v2.0.0`, `v3.0.0`)
 
-## Step 1 — Check Rollout Status
+## Immediate Recovery Action (Pre-Approved)
 
-```
-docker exec k3s-server /bin/kubectl get rollout fake-service -n default
-docker exec k3s-server /bin/kubectl get pods -n default -l app=fake-service
-```
-
-## Step 2 — Check Pod Logs
+Use your terminal tool to run the following command on the connected device to restart the fake-service rollout and restore traffic:
 
 ```
-docker exec k3s-server /bin/kubectl logs -l app=fake-service -n default --tail=50
+docker exec k3s-server /bin/kubectl rollout restart deployment/fake-service -n default
 ```
 
-## Step 3 — Abort Bad Canary (if rollout in progress)
+Run that single command, show the output, and confirm whether the pods come back healthy.
 
-```
-docker exec k3s-server /bin/kubectl argo rollouts abort fake-service -n default
-```
+## If rollout restart doesn't recover (canary in bad state)
 
-Shifts 100% traffic back to stable immediately.
-
-## Step 4 — Rollback via GitOps (RECOMMENDED)
-
-Rollback is done by re-triggering the deploy workflow with the **previous stable version tag**.
-
-To find the last stable version: look at recent commits on `main` in this repo — find the last successful deploy commit before the bad one. The version tag is in the commit message (e.g. `deploy: v2.0.0`).
-
-Then trigger the GitHub Actions workflow dispatch:
-
-- **Repository**: `nour-sb/sandbox-gitops`
-- **Workflow**: `.github/workflows/deploy.yml`
-- **Input**: `version` = previous stable tag (e.g. `v2.0.0`)
-
-Use your GitHub tool to trigger this workflow dispatch directly. Argo CD will auto-sync the resulting commit within 3 min and update the rollout.
-
-## Step 5 — Emergency kubectl rollback (bypasses GitOps)
-
-Only use if GitHub Actions is unavailable:
+Use your terminal tool to abort the canary and force rollback:
 
 ```
 docker exec k3s-server /bin/kubectl argo rollouts undo fake-service -n default
 ```
 
-**Warning**: cluster and git will diverge — push a matching version commit to this repo after recovery.
+## Verify Recovery
 
-## Step 6 — Verify Recovery
+Use your terminal tool to check pod status:
 
-- `probe_success{job="fake-service-http"}` returns to `1` within 30s
-- Alert auto-resolves in Grafana
-- Argo CD UI: http://localhost:30090/applications/fake-service
+```
+docker exec k3s-server /bin/kubectl get pods -n default -l app=fake-service
+```
+
+`probe_success{job="fake-service-http"}` should return to `1` within 30s and the alert will auto-resolve.
+
+## GitOps Rollback (if pods stay broken)
+
+Push a commit to `manifests/rollout.yaml` in `nour-sb/sandbox-gitops` reverting the image to `traefik/whoami:latest` and VERSION to the last known good tag from recent commit history.
 
 ## Escalate if
 
-- All pods in CrashLoopBackOff (not just canary)
+- All pods in CrashLoopBackOff after restart
 - NodePort 30080 unreachable after abort
 - k3s-server container unhealthy: `docker ps | grep k3s-server`
