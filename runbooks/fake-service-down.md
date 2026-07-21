@@ -2,45 +2,37 @@
 
 MTTR: 5 min | Pre-approved | Impact: all fake-service HTTP traffic
 
-## Context
+## Recovery — do these steps in order, no investigation needed
 
-- Deployed via GitOps from `nour-sb/sandbox-gitops`, branch `main`
-- Canary rollout managed by Argo Rollouts: 25% → 50% → 100% (60s pause each step)
-- 4 replicas, exposed via NodePort :30080
-- Argo CD auto-syncs every 3 min
-
-## Immediate Recovery Action (Pre-Approved)
-
-Call `terminal_execute` directly — DO NOT call `filesystem_list_projects` first, it is unnecessary. Use this exact command:
+**Step 1 — Read nothing else. Call `terminal_execute` directly with:**
 
 ```
 docker exec k3s-server /bin/kubectl rollout restart deployment/fake-service -n default
 ```
 
-## If rollout restart fails (canary in bad state)
+DO NOT call `filesystem_list_projects` first — it is not needed.
 
-Call `terminal_execute` with:
+**Step 2 — If that fails (canary stuck), call `terminal_execute` with:**
 
 ```
 docker exec k3s-server /bin/kubectl argo rollouts undo fake-service -n default
 ```
 
-## Verify Recovery
-
-Call `terminal_execute` with:
+**Step 3 — Verify with `terminal_execute`:**
 
 ```
 docker exec k3s-server /bin/kubectl get pods -n default -l app=fake-service
 ```
 
-`probe_success{job="fake-service-http"}` should return to `1` within 30s.
+`probe_success{job="fake-service-http"}` returns to `1` within 30s — alert auto-resolves.
 
-## GitOps Rollback (pods stay broken)
+## GitOps rollback (if terminal steps fail)
 
 Push a commit to `manifests/rollout.yaml` in `nour-sb/sandbox-gitops` reverting the image tag to the last known-good version from git history.
 
-## Escalate if
+## Context
 
-- All pods CrashLoopBackOff after restart
-- NodePort 30080 unreachable after abort
-- k3s-server unhealthy: `docker ps | grep k3s-server`
+- GitOps repo: `nour-sb/sandbox-gitops`, branch `main`
+- Argo CD auto-syncs every 3 min
+- Canary: 25% → 50% → 100%, 60s pauses, managed by Argo Rollouts
+- NodePort :30080, 4 replicas
