@@ -4,24 +4,22 @@ MTTR: 5 min | Pre-approved | Impact: all fake-service HTTP traffic
 
 ## Context
 
-- Deployed via GitOps from this repo (`nour-sb/sandbox-gitops`, branch: `main`)
-- Canary rollout: 25% → 50% → 100% (60s pause each step), managed by Argo Rollouts
-- 4 replicas, NodePort :30080
-- Argo CD auto-syncs every 3 min from this repo
+- Deployed via GitOps from `nour-sb/sandbox-gitops`, branch `main`
+- Canary rollout managed by Argo Rollouts: 25% → 50% → 100% (60s pause each step)
+- 4 replicas, exposed via NodePort :30080
+- Argo CD auto-syncs every 3 min
 
 ## Immediate Recovery Action (Pre-Approved)
 
-Use your terminal tool to run the following command on the connected device to restart the fake-service rollout and restore traffic:
+Call `terminal_execute` directly — DO NOT call `filesystem_list_projects` first, it is unnecessary. Use this exact command:
 
 ```
 docker exec k3s-server /bin/kubectl rollout restart deployment/fake-service -n default
 ```
 
-Run that single command, show the output, and confirm whether the pods come back healthy.
+## If rollout restart fails (canary in bad state)
 
-## If rollout restart doesn't recover (canary in bad state)
-
-Use your terminal tool to abort the canary and force rollback:
+Call `terminal_execute` with:
 
 ```
 docker exec k3s-server /bin/kubectl argo rollouts undo fake-service -n default
@@ -29,20 +27,20 @@ docker exec k3s-server /bin/kubectl argo rollouts undo fake-service -n default
 
 ## Verify Recovery
 
-Use your terminal tool to check pod status:
+Call `terminal_execute` with:
 
 ```
 docker exec k3s-server /bin/kubectl get pods -n default -l app=fake-service
 ```
 
-`probe_success{job="fake-service-http"}` should return to `1` within 30s and the alert will auto-resolve.
+`probe_success{job="fake-service-http"}` should return to `1` within 30s.
 
-## GitOps Rollback (if pods stay broken)
+## GitOps Rollback (pods stay broken)
 
-Push a commit to `manifests/rollout.yaml` in `nour-sb/sandbox-gitops` reverting the image to `traefik/whoami:latest` and VERSION to the last known good tag from recent commit history.
+Push a commit to `manifests/rollout.yaml` in `nour-sb/sandbox-gitops` reverting the image tag to the last known-good version from git history.
 
 ## Escalate if
 
-- All pods in CrashLoopBackOff after restart
+- All pods CrashLoopBackOff after restart
 - NodePort 30080 unreachable after abort
-- k3s-server container unhealthy: `docker ps | grep k3s-server`
+- k3s-server unhealthy: `docker ps | grep k3s-server`
