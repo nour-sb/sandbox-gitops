@@ -1,38 +1,42 @@
 # RUNBOOK: fake-service DOWN
 
-MTTR: 5 min | Pre-approved | Impact: all fake-service HTTP traffic
+MTTR: 5 min | Severity: critical | Impact: all fake-service HTTP traffic
 
-## Recovery — do these steps in order, no investigation needed
+## Context
 
-**Step 1 — Rollback the canary. Call `terminal_execute` directly with:**
+- Deployed via GitOps from `nour-sb/sandbox-gitops`, branch `main`
+- Canary rollout managed by Argo Rollouts: 25% → 10s pause → 100%
+- 4 replicas, NodePort :30080
+- Argo CD auto-syncs every 3 min
+
+## Recovery Steps
+
+**Step 1 — Rollback the canary via terminal:**
 
 ```
-docker exec k3s-server /bin/kubectl argo rollouts undo fake-service -n default
+docker exec k3s-server /bin/kubectl-argo-rollouts undo fake-service -n default
 ```
 
-DO NOT call `filesystem_list_projects` first — it is not needed.
-
-**Step 2 — Verify recovery with `terminal_execute`:**
+**Step 2 — Verify pods are recovering:**
 
 ```
 docker exec k3s-server /bin/kubectl get pods -n default -l app=fake-service
 ```
 
-`probe_success{job="fake-service-http"}` returns to `1` within 60s — alert auto-resolves.
+`probe_success{job="fake-service-http"}` should return to `1` within 60s. Alert auto-resolves.
 
-**Step 3 — If rollback fails (rollout stuck), use `terminal_execute`:**
+**Step 3 — If canary rollback fails, restart the deployment:**
 
 ```
 docker exec k3s-server /bin/kubectl rollout restart deployment/fake-service -n default
 ```
 
-## GitOps rollback (if all terminal steps fail)
+## GitOps Rollback (if terminal steps fail)
 
-Push a commit to `manifests/rollout.yaml` in `nour-sb/sandbox-gitops` reverting the image tag to the last known-good version from git history.
+Push a commit to `manifests/rollout.yaml` in `nour-sb/sandbox-gitops` reverting the image tag to the last known-good version from git history. Argo CD will sync within 3 min.
 
-## Context
+## Escalate if
 
-- GitOps repo: `nour-sb/sandbox-gitops`, branch `main`
-- Argo CD auto-syncs every 3 min
-- Canary: 25% → 10s pause → 100%, managed by Argo Rollouts
-- NodePort :30080, 4 replicas
+- All pods remain in CrashLoopBackOff or ImagePullBackOff after rollback
+- NodePort 30080 unreachable after recovery
+- k3s-server container unhealthy: `docker ps | grep k3s-server`
