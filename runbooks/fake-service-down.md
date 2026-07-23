@@ -10,11 +10,9 @@ MTTR: 2 min | Severity: critical | Impact: all fake-service HTTP traffic
 
 ## Recovery Steps
 
-**Step 1 — Scale replicas back to 4:**
+**Step 1 — Restore replicas via GitOps:**
 
-```
-docker exec k3s-server /bin/kubectl patch rollout fake-service -n default --kubeconfig /etc/rancher/k3s/k3s.yaml --type=json -p='[{"op":"replace","path":"/spec/replicas","value":4}]'
-```
+Update `spec.replicas` to `4` in `manifests/rollout.yaml` in the `nour-sb/sandbox-gitops` repository on branch `main` and push the change. Argo CD will detect the change and sync within 3 minutes, restoring the service.
 
 **Step 2 — Verify pods are recovering:**
 
@@ -22,7 +20,7 @@ docker exec k3s-server /bin/kubectl patch rollout fake-service -n default --kube
 docker exec k3s-server /bin/kubectl get pods -n default -l app=fake-service --kubeconfig /etc/rancher/k3s/k3s.yaml
 ```
 
-`probe_success{job="fake-service-http"}` should return to `1` within 30s. Alert auto-resolves.
+`probe_success{job="fake-service-http"}` should return to `1` within 30s of Argo CD sync. Alert auto-resolves.
 
 ## Escalate if
 
