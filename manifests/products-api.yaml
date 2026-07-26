@@ -1,0 +1,75 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: products-api-config
+  namespace: default
+data:
+  default.conf: |
+    server {
+      listen 80;
+      location / {
+        default_type application/json;
+        return 200 '{"products":[{"id":"p-001","name":"Chicken Shawarma","price":4.99,"category":"food"},{"id":"p-002","name":"Falafel Wrap","price":3.49,"category":"food"},{"id":"p-003","name":"Cola 330ml","price":1.29,"category":"drinks"},{"id":"p-004","name":"Hummus Plate","price":5.99,"category":"food"},{"id":"p-005","name":"Mango Juice","price":2.49,"category":"drinks"}]}';
+      }
+      location /health {
+        default_type application/json;
+        return 200 '{"status":"ok","service":"products-api"}';
+      }
+    }
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Rollout
+metadata:
+  name: products-api
+  namespace: default
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: products-api
+  template:
+    metadata:
+      labels:
+        app: products-api
+    spec:
+      containers:
+      - name: products-api
+        image: nginx:alpine
+        ports:
+        - containerPort: 80
+        volumeMounts:
+        - name: config
+          mountPath: /etc/nginx/conf.d/default.conf
+          subPath: default.conf
+        resources:
+          requests:
+            cpu: 10m
+            memory: 16Mi
+          limits:
+            cpu: 100m
+            memory: 64Mi
+      volumes:
+      - name: config
+        configMap:
+          name: products-api-config
+  strategy:
+    canary:
+      steps:
+      - setWeight: 25
+      - pause:
+          duration: 10s
+      - setWeight: 100
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: products-api
+  namespace: default
+spec:
+  type: NodePort
+  selector:
+    app: products-api
+  ports:
+  - port: 80
+    targetPort: 80
+    nodePort: 30080
