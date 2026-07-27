@@ -265,9 +265,6 @@ Push_files still requires human approval, still subject to the ~2.5 min window, 
 ## Milestone 11 — push_files Behavior, PLR Semantics, and False Fix Confirmation
 **Date:** 2026-07-24
 
-**M11-F1 — PLR appeared non-terminal during one auto-investigation test; later confirmed as hard stop**
-In this test, an Explore link was posted 19 seconds after PLR. However, subsequent testing on 2026-07-27 (threads 1785157815, 1785156278) showed PLR is a hard stop for explicit @Grafana triggers — no messages appear in the thread after PLR fires, reply_count stays at 2. The M11 behavior may have been specific to an auto-investigation flow running in parallel. For explicit @Grafana-triggered turns, PLR = no further output.
-
 **M11-F2 — push_files was called and approved; push silently did not land**
 push_files was called at 20:11:39, user approved instantly, tool_result came back — but no commit appeared on GitHub. All commits in `nour-sb/sandbox-gitops` are user-authored. The GitHub MCP token may lack write access, or push_files fails silently for another reason. The AI received a result it interpreted as success.
 
