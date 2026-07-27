@@ -107,9 +107,6 @@ Conversation triggered on thread `1784735397.939839`. Tunnel started fresh with 
 
 ## Limitations Discovered
 
-### L16 — AI Cannot Verify Its Own Remediation; May Claim False Success
-After calling push_files (or any action tool), the AI verifies recovery by checking downstream metrics (probe_success). If the metric is healthy for any reason — including a manual fix by a human — the AI will attribute it to its own action and declare success. It cannot check git history or verify a commit SHA. This produces false fix confirmations that look authoritative in the conversation log.
-
 ### L1 — PLR With Manual Approval Is a Grafana Bug
 Any tool requiring manual approval triggers "Processing Limit Reached" immediately — even when the user clicks approve within 2 seconds. Auto-approve eliminates PLR entirely for the same tool calls. This is broken behavior in the approval flow that Grafana needs to fix.
 
