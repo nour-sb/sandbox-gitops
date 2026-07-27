@@ -141,9 +141,6 @@ Once a thread hits "Processing Limit Reached," all subsequent @Grafana mentions 
 ### L6 — Anti-Bot-Loop Protection Hard-Coded
 Bot tokens (`xoxb-`) are silently ignored. Only human tokens (`xoxp-`) get real AI responses. Cannot fully automate the trigger side without impersonating a user.
 
-### L8 — AI May Skip Terminal If No Filesystem Projects Configured (Unconfirmed)
-Observed once: tunnel started without a project path → `filesystem_list_projects` returned empty → AI said "No projects configured, so I can't run the recovery commands directly" and skipped `terminal_execute`. Next run added `/Users/nour/sandbox` and it worked. Causal link unconfirmed — AI behavior is non-deterministic and this may have been a one-off bad inference. Needs more data points.
-
 ### L9 — Tunnel Execution Is Silent
 `grafana-assistant tunnel connect --terminal` executes approved commands with no stdout output. Cannot monitor command execution from the terminal. Ground truth: `kubectl get events` on the cluster.
 
