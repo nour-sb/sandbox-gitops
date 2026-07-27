@@ -1,0 +1,90 @@
+services:
+  node-exporter:
+    image: prom/node-exporter:latest
+    container_name: node-exporter
+    restart: unless-stopped
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    command:
+      - "--path.procfs=/host/proc"
+      - "--path.sysfs=/host/sys"
+      - "--path.rootfs=/rootfs"
+      - "--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)"
+    ports:
+      - "9100:9100"
+
+  # The "production service" we'll take down / roll out
+  nginx:
+    image: nginx:alpine
+    container_name: nginx-service
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+
+  # Probes services via HTTP — gives us up/down + latency metrics
+  blackbox:
+    image: prom/blackbox-exporter:latest
+    container_name: blackbox
+    restart: unless-stopped
+    ports:
+      - "9115:9115"
+
+  alloy:
+    image: grafana/alloy:latest
+    container_name: alloy
+    restart: unless-stopped
+    volumes:
+      - ./config.alloy:/etc/alloy/config.alloy:ro
+    command:
+      - run
+      - /etc/alloy/config.alloy
+      - --server.http.listen-addr=0.0.0.0:12345
+    ports:
+      - "12345:12345"
+    depends_on:
+      - node-exporter
+      - nginx
+      - blackbox
+
+  # ── Kubernetes (k3s) ────────────────────────────────────────────────────────
+  k3s-server:
+    image: rancher/k3s:latest
+    container_name: k3s-server
+    command: server --disable=traefik --disable=servicelb --node-name=k3s-node
+    privileged: true
+    tmpfs:
+      - /run
+      - /var/run
+    volumes:
+      - k3s-server-data:/var/lib/rancher/k3s
+      - k3s-config:/etc/rancher/k3s
+    ports:
+      - "6443:6443"    # kubectl API
+      - "30080:30080"  # products-api NodePort
+      - "30090:30090"  # Argo CD UI
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "/bin/kubectl", "get", "nodes", "--request-timeout=5s"]
+      interval: 15s
+      timeout: 10s
+      retries: 20
+      start_period: 40s
+
+  # One-shot bootstrap: installs Argo CD + Rollouts + creates the Application
+  k3s-bootstrap:
+    image: rancher/k3s:latest
+    container_name: k3s-bootstrap
+    entrypoint: ["/bin/sh", "/bootstrap.sh"]
+    volumes:
+      - ./bootstrap.sh:/bootstrap.sh:ro
+      - k3s-config:/etc/rancher/k3s:ro
+    depends_on:
+      k3s-server:
+        condition: service_healthy
+    restart: "no"
+
+volumes:
+  k3s-server-data:
+  k3s-config:

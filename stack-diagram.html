@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Observability Stack</title>
+<style>
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: #0d1117;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 24px 16px 32px;
+  min-height: 100vh;
+  font-family: 'SF Mono', 'Fira Code', 'Courier New', monospace;
+}
+h1 {
+  color: #8b949e;
+  font-size: 11px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  margin: 0 0 16px;
+}
+svg { width: min(1100px, 100%); height: auto; }
+
+@keyframes flow { to { stroke-dashoffset: -28; } }
+
+.flow {
+  fill: none;
+  stroke-width: 1.8;
+  stroke-dasharray: 8 6;
+  animation: flow 1s linear infinite;
+}
+.f-blue   { stroke: #4fc3f7; }
+.f-green  { stroke: #56d364; animation-duration: 1.3s; }
+.f-purple { stroke: #bc8cff; stroke-width: 2.4; animation-duration: 0.72s; }
+.f-orange { stroke: #f0883e; animation-duration: 1.45s; }
+.f-red    { stroke: #ff7b72; animation-duration: 2.2s; }
+.f-teal   { stroke: #39d0d8; animation-duration: 1.1s; }
+
+svg a { cursor: pointer; }
+svg a rect { transition: filter 0.15s ease, stroke-width 0.15s ease; }
+svg a:hover rect { filter: brightness(1.35) drop-shadow(0 0 6px currentColor); stroke-width: 2.5; }
+
+.legend { display: flex; gap: 22px; margin-top: 18px; flex-wrap: wrap; justify-content: center; }
+.leg { display: flex; align-items: center; gap: 7px; font-size: 10px; font-family: monospace; }
+.leg-line { width: 26px; height: 2px; border-radius: 1px; }
+.hint { color: #484f58; font-size: 10px; margin-top: 10px; font-family: monospace; }
+</style>
+</head>
+<body>
+<h1>Grafana Sandbox — Observability Stack</h1>
+<svg viewBox="0 0 1100 810" xmlns="http://www.w3.org/2000/svg">
+<defs>
+  <marker id="a-blue"   viewBox="0 0 10 7" markerWidth="8" markerHeight="6" refX="8" refY="3.5" orient="auto"><polygon points="0,0 10,3.5 0,7" fill="#4fc3f7"/></marker>
+  <marker id="a-green"  viewBox="0 0 10 7" markerWidth="8" markerHeight="6" refX="8" refY="3.5" orient="auto"><polygon points="0,0 10,3.5 0,7" fill="#56d364"/></marker>
+  <marker id="a-purple" viewBox="0 0 10 7" markerWidth="8" markerHeight="6" refX="8" refY="3.5" orient="auto"><polygon points="0,0 10,3.5 0,7" fill="#bc8cff"/></marker>
+  <marker id="a-orange" viewBox="0 0 10 7" markerWidth="8" markerHeight="6" refX="8" refY="3.5" orient="auto"><polygon points="0,0 10,3.5 0,7" fill="#f0883e"/></marker>
+  <marker id="a-red"    viewBox="0 0 10 7" markerWidth="8" markerHeight="6" refX="8" refY="3.5" orient="auto"><polygon points="0,0 10,3.5 0,7" fill="#ff7b72"/></marker>
+  <marker id="a-teal"   viewBox="0 0 10 7" markerWidth="8" markerHeight="6" refX="8" refY="3.5" orient="auto"><polygon points="0,0 10,3.5 0,7" fill="#39d0d8"/></marker>
+</defs>
+
+<!-- ══ ZONE: GitHub / External ══════════════════════════════════ -->
+<rect x="10" y="8" width="680" height="95" rx="10" fill="#0d1f0d" stroke="#238636" stroke-width="1.2"/>
+<text x="22" y="23" fill="#3fb950" font-size="9" font-family="monospace" letter-spacing="2.5">GITHUB / EXTERNAL</text>
+
+<a href="https://github.com/nour-sb/sandbox-gitops/actions" target="_blank">
+  <title>GitHub Actions — github.com/nour-sb/sandbox-gitops/actions</title>
+  <rect x="42" y="28" width="172" height="58" rx="6" fill="#0d2216" stroke="#3fb950" stroke-width="1.5"/>
+  <text x="128" y="53" text-anchor="middle" fill="#56d364" font-size="12" font-weight="bold" font-family="monospace">GitHub Actions</text>
+  <text x="128" y="69" text-anchor="middle" fill="#57ab5a" font-size="9" font-family="monospace">workflow_dispatch</text>
+</a>
+
+<a href="https://github.com/nour-sb/sandbox-gitops" target="_blank">
+  <title>GitHub Repo — github.com/nour-sb/sandbox-gitops</title>
+  <rect x="464" y="28" width="170" height="58" rx="6" fill="#0d2216" stroke="#3fb950" stroke-width="1.5"/>
+  <text x="549" y="53" text-anchor="middle" fill="#56d364" font-size="12" font-weight="bold" font-family="monospace">GitHub Repo</text>
+  <text x="549" y="69" text-anchor="middle" fill="#57ab5a" font-size="9" font-family="monospace">nour-sb/sandbox-gitops</text>
+</a>
+
+<!-- ══ ZONE: Docker Compose ══════════════════════════════════════ -->
+<rect x="10" y="114" width="680" height="688" rx="10" fill="#0d1117" stroke="#30363d" stroke-width="1.5"/>
+<text x="22" y="129" fill="#484f58" font-size="9" font-family="monospace" letter-spacing="2.5">DOCKER COMPOSE  ·  localhost</text>
+
+<!-- node-exporter -->
+<a href="http://localhost:9100/metrics" target="_blank">
+  <title>node-exporter — localhost:9100/metrics</title>
+  <rect x="38" y="172" width="168" height="56" rx="6" fill="#0c2040" stroke="#4fc3f7" stroke-width="1.5"/>
+  <text x="122" y="196" text-anchor="middle" fill="#79c0ff" font-size="11" font-weight="bold" font-family="monospace">node-exporter</text>
+  <text x="122" y="213" text-anchor="middle" fill="#388bfd" font-size="9" font-family="monospace">host metrics · :9100</text>
+</a>
+
+<!-- api-gateway (nginx) -->
+<a href="http://localhost:8080" target="_blank">
+  <title>api-gateway — localhost:8080 (nginx reverse proxy)</title>
+  <rect x="38" y="256" width="168" height="56" rx="6" fill="#0c2040" stroke="#4fc3f7" stroke-width="1.5"/>
+  <text x="122" y="280" text-anchor="middle" fill="#79c0ff" font-size="11" font-weight="bold" font-family="monospace">api-gateway</text>
+  <text x="122" y="297" text-anchor="middle" fill="#388bfd" font-size="9" font-family="monospace">nginx · :8080</text>
+</a>
+
+<!-- runbook-mcp -->
+<a href="http://localhost:3001/mcp" target="_blank">
+  <title>runbook-mcp — localhost:3001/mcp · get_runbook(service) MCP tool</title>
+  <rect x="38" y="340" width="168" height="56" rx="6" fill="#0c2630" stroke="#39d0d8" stroke-width="1.5"/>
+  <text x="122" y="364" text-anchor="middle" fill="#56d8e0" font-size="11" font-weight="bold" font-family="monospace">runbook-mcp</text>
+  <text x="122" y="381" text-anchor="middle" fill="#2e8f96" font-size="9" font-family="monospace">get_runbook · :3001</text>
+</a>
+
+<!-- blackbox-exporter -->
+<a href="http://localhost:9115" target="_blank">
+  <title>blackbox-exporter — localhost:9115</title>
+  <rect x="266" y="214" width="168" height="56" rx="6" fill="#0c2040" stroke="#4fc3f7" stroke-width="1.5"/>
+  <text x="350" y="238" text-anchor="middle" fill="#79c0ff" font-size="11" font-weight="bold" font-family="monospace">blackbox</text>
+  <text x="350" y="255" text-anchor="middle" fill="#388bfd" font-size="9" font-family="monospace">HTTP prober · :9115</text>
+</a>
+
+<!-- alloy -->
+<a href="http://localhost:12345" target="_blank">
+  <title>Alloy — localhost:12345</title>
+  <rect x="492" y="208" width="158" height="56" rx="6" fill="#0c2040" stroke="#4fc3f7" stroke-width="1.5"/>
+  <text x="571" y="232" text-anchor="middle" fill="#79c0ff" font-size="11" font-weight="bold" font-family="monospace">Alloy</text>
+  <text x="571" y="249" text-anchor="middle" fill="#388bfd" font-size="9" font-family="monospace">Grafana Agent · :12345</text>
+</a>
+
+<!-- ══ ZONE: Kubernetes ══════════════════════════════════════════ -->
+<rect x="28" y="436" width="644" height="354" rx="8" fill="#0d1f2d" stroke="#1f6391" stroke-width="1.5" stroke-dasharray="5 3"/>
+<text x="40" y="452" fill="#388bfd" font-size="9" font-family="monospace" letter-spacing="2.5">KUBERNETES (k3s)  ·  Argo CD  ·  Argo Rollouts</text>
+
+<!-- Argo CD -->
+<a href="http://localhost:30090" target="_blank">
+  <title>Argo CD — localhost:30090</title>
+  <rect x="44" y="472" width="160" height="56" rx="6" fill="#0c2318" stroke="#56d364" stroke-width="1.5"/>
+  <text x="124" y="496" text-anchor="middle" fill="#7ee787" font-size="11" font-weight="bold" font-family="monospace">Argo CD</text>
+  <text x="124" y="513" text-anchor="middle" fill="#3fb950" font-size="9" font-family="monospace">GitOps sync · :30090</text>
+</a>
+
+<!-- Argo Rollouts -->
+<a href="http://localhost:30090/applications/fake-service" target="_blank">
+  <title>Argo Rollouts — canary deployments for products-api</title>
+  <rect x="256" y="472" width="182" height="56" rx="6" fill="#0c2318" stroke="#56d364" stroke-width="1.5"/>
+  <text x="347" y="496" text-anchor="middle" fill="#7ee787" font-size="11" font-weight="bold" font-family="monospace">Argo Rollouts</text>
+  <text x="347" y="513" text-anchor="middle" fill="#3fb950" font-size="9" font-family="monospace">canary 25%→100%</text>
+</a>
+
+<!-- products-api -->
+<a href="http://localhost:30080" target="_blank">
+  <title>products-api — localhost:30080 · GET / → product catalog JSON · 3 replicas</title>
+  <rect x="492" y="462" width="168" height="56" rx="6" fill="#0c2318" stroke="#56d364" stroke-width="1.5"/>
+  <text x="576" y="486" text-anchor="middle" fill="#7ee787" font-size="11" font-weight="bold" font-family="monospace">products-api</text>
+  <text x="576" y="503" text-anchor="middle" fill="#3fb950" font-size="9" font-family="monospace">catalog · :30080 · 3r</text>
+</a>
+
+<!-- cart-api -->
+<a href="http://localhost:30081" target="_blank">
+  <title>cart-api — NodePort :30081 · GET / → user cart JSON · 2 replicas</title>
+  <rect x="492" y="554" width="168" height="56" rx="6" fill="#0c2318" stroke="#56d364" stroke-width="1.5"/>
+  <text x="576" y="578" text-anchor="middle" fill="#7ee787" font-size="11" font-weight="bold" font-family="monospace">cart-api</text>
+  <text x="576" y="595" text-anchor="middle" fill="#3fb950" font-size="9" font-family="monospace">cart · :30081 · 2r</text>
+</a>
+
+<!-- dependency arrow: cart-api → products-api (internal) -->
+<path fill="none" stroke="#3fb950" stroke-width="1" stroke-dasharray="3 3"
+  d="M 576 554 L 576 518"/>
+<text x="588" y="538" fill="#2a6e35" font-size="7" font-family="monospace">depends</text>
+
+<!-- ══ ZONE: Grafana Cloud ════════════════════════════════════════ -->
+<rect x="720" y="8" width="370" height="342" rx="10" fill="#1a0d2e" stroke="#6e40c9" stroke-width="1.2"/>
+<text x="732" y="23" fill="#bc8cff" font-size="9" font-family="monospace" letter-spacing="2.5">GRAFANA CLOUD</text>
+
+<a href="https://lavenderbanana274.grafana.net" target="_blank">
+  <title>Grafana Cloud — lavenderbanana274.grafana.net</title>
+  <rect x="734" y="32" width="342" height="84" rx="6" fill="#2d1160" stroke="#bc8cff" stroke-width="1.5"/>
+  <text x="905" y="60" text-anchor="middle" fill="#d2a8ff" font-size="13" font-weight="bold" font-family="monospace">Grafana Cloud</text>
+  <text x="905" y="77" text-anchor="middle" fill="#8b949e" font-size="9" font-family="monospace">lavenderbanana274.grafana.net</text>
+  <text x="905" y="93" text-anchor="middle" fill="#6e40c9" font-size="8" font-family="monospace">Mimir · Dashboards · Alerting</text>
+</a>
+
+<a href="https://lavenderbanana274.grafana.net/explore" target="_blank">
+  <title>Mimir — metrics storage</title>
+  <rect x="734" y="132" width="160" height="44" rx="5" fill="#1f1040" stroke="#4a1080" stroke-width="1"/>
+  <text x="814" y="150" text-anchor="middle" fill="#9e6cca" font-size="10" font-family="monospace">Mimir</text>
+  <text x="814" y="165" text-anchor="middle" fill="#6e4090" font-size="8" font-family="monospace">metrics storage</text>
+</a>
+
+<a href="https://lavenderbanana274.grafana.net/dashboards" target="_blank">
+  <title>Dashboards</title>
+  <rect x="734" y="192" width="160" height="44" rx="5" fill="#1f1040" stroke="#4a1080" stroke-width="1"/>
+  <text x="814" y="210" text-anchor="middle" fill="#9e6cca" font-size="10" font-family="monospace">Dashboards</text>
+  <text x="814" y="225" text-anchor="middle" fill="#6e4090" font-size="8" font-family="monospace">query → visualise</text>
+</a>
+
+<a href="https://lavenderbanana274.grafana.net/alerting" target="_blank">
+  <title>Alerting — products-api DOWN, cart-api DOWN, api-gateway DOWN/Latency, High CPU</title>
+  <rect x="734" y="252" width="160" height="44" rx="5" fill="#1f1040" stroke="#4a1080" stroke-width="1"/>
+  <text x="814" y="270" text-anchor="middle" fill="#9e6cca" font-size="10" font-family="monospace">Alerting</text>
+  <text x="814" y="285" text-anchor="middle" fill="#6e4090" font-size="8" font-family="monospace">products-api · cart-api · ...</text>
+</a>
+
+<!-- AI assistant panel -->
+<rect x="906" y="132" width="180" height="164" rx="5" fill="#140830" stroke="#4a1080" stroke-width="1" stroke-dasharray="3 2"/>
+<text x="996" y="152" text-anchor="middle" fill="#7c4dbe" font-size="9" font-family="monospace">@Grafana AI</text>
+<text x="996" y="168" text-anchor="middle" fill="#58376e" font-size="8" font-family="monospace">reads alert context</text>
+<text x="996" y="184" text-anchor="middle" fill="#58376e" font-size="8" font-family="monospace">queries live metrics</text>
+<text x="996" y="200" text-anchor="middle" fill="#58376e" font-size="8" font-family="monospace">calls get_runbook()</text>
+<text x="996" y="220" text-anchor="middle" fill="#3d2255" font-size="8" font-family="monospace">─────────────────</text>
+<text x="996" y="236" text-anchor="middle" fill="#58376e" font-size="8" font-family="monospace">pushes GitOps fix</text>
+<text x="996" y="252" text-anchor="middle" fill="#58376e" font-size="8" font-family="monospace">terminal via tunnel</text>
+<text x="996" y="268" text-anchor="middle" fill="#58376e" font-size="8" font-family="monospace">approval in Slack</text>
+
+<!-- ══ ZONE: Slack ════════════════════════════════════════════════ -->
+<rect x="720" y="368" width="370" height="100" rx="10" fill="#1f0d12" stroke="#8957e5" stroke-width="1.2"/>
+<text x="732" y="383" fill="#d2a8ff" font-size="9" font-family="monospace" letter-spacing="2.5">SLACK  ·  T05TCQ1HX9S</text>
+
+<a href="https://app.slack.com/client/T05TCQ1HX9S" target="_blank">
+  <title>Slack workspace — T05TCQ1HX9S</title>
+  <rect x="790" y="392" width="240" height="60" rx="6" fill="#3d0f2a" stroke="#d2a8ff" stroke-width="1.5"/>
+  <text x="910" y="418" text-anchor="middle" fill="#d2a8ff" font-size="12" font-weight="bold" font-family="monospace">@Grafana</text>
+  <text x="910" y="436" text-anchor="middle" fill="#8b6090" font-size="9" font-family="monospace">AI assistant · incident response</text>
+</a>
+
+<!-- ══ ARROWS ════════════════════════════════════════════════════ -->
+
+<!-- 1. node-exporter → Alloy (scrape) -->
+<path class="flow f-blue" marker-end="url(#a-blue)"
+  d="M 206 200 C 340 200 492 224 492 232"/>
+<text x="342" y="193" text-anchor="middle" fill="#4fc3f7" font-size="8" font-family="monospace">scrape</text>
+
+<!-- 2. Alloy → blackbox (scrape trigger) -->
+<path class="flow f-blue" marker-end="url(#a-blue)"
+  d="M 492 234 L 434 237"/>
+<text x="461" y="228" text-anchor="middle" fill="#4fc3f7" font-size="8" font-family="monospace">scrape</text>
+
+<!-- 3. blackbox → api-gateway (HTTP probe) -->
+<path class="flow f-orange" marker-end="url(#a-orange)"
+  d="M 266 242 C 224 242 206 270 206 278"/>
+<text x="210" y="256" text-anchor="end" fill="#f0883e" font-size="8" font-family="monospace">probe</text>
+
+<!-- 4. blackbox → products-api (HTTP probe) -->
+<path class="flow f-orange" marker-end="url(#a-orange)"
+  d="M 350 270 C 350 400 492 454 492 472"/>
+<text x="410" y="382" text-anchor="middle" fill="#f0883e" font-size="8" font-family="monospace">probe :30080</text>
+
+<!-- 4b. blackbox → cart-api (HTTP probe) -->
+<path class="flow f-orange" marker-end="url(#a-orange)"
+  d="M 266 260 C 240 400 470 554 492 563"/>
+<text x="296" y="440" text-anchor="middle" fill="#f0883e" font-size="8" font-family="monospace">probe :30081</text>
+
+<!-- 5. Alloy → Grafana Cloud (remote_write) -->
+<path class="flow f-purple" marker-end="url(#a-purple)"
+  d="M 650 232 C 692 232 734 150 734 74"/>
+<text x="714" y="182" text-anchor="middle" fill="#bc8cff" font-size="8" font-family="monospace">remote_write</text>
+
+<!-- 6. GitHub Actions → GitHub Repo (push) -->
+<path class="flow f-green" marker-end="url(#a-green)"
+  d="M 214 57 L 464 57"/>
+<text x="338" y="49" text-anchor="middle" fill="#56d364" font-size="8" font-family="monospace">push manifests</text>
+
+<!-- 7. GitHub Repo → Argo CD (poll) -->
+<path class="flow f-green" marker-end="url(#a-green)"
+  d="M 549 86 L 549 106 L 124 106 L 124 472"/>
+<text x="296" y="100" text-anchor="middle" fill="#56d364" font-size="8" font-family="monospace">poll · 3 min</text>
+
+<!-- 8. Argo CD → Argo Rollouts (trigger) -->
+<path class="flow f-green" marker-end="url(#a-green)"
+  d="M 204 500 L 256 500"/>
+<text x="230" y="493" text-anchor="middle" fill="#56d364" font-size="8" font-family="monospace">trigger</text>
+
+<!-- 9. Argo Rollouts → products-api (deploy canary) -->
+<path class="flow f-green" marker-end="url(#a-green)"
+  d="M 438 496 L 492 490"/>
+<text x="465" y="487" text-anchor="middle" fill="#56d364" font-size="8" font-family="monospace">deploy</text>
+
+<!-- 9b. Argo CD → cart-api (deploy) -->
+<path class="flow f-green" marker-end="url(#a-green)"
+  d="M 204 516 C 340 540 470 570 492 574"/>
+<text x="348" y="558" text-anchor="middle" fill="#56d364" font-size="8" font-family="monospace">deploy</text>
+
+<!-- 10. Grafana Cloud → Slack (alert) -->
+<path class="flow f-red" marker-end="url(#a-red)"
+  d="M 910 116 C 910 260 910 320 910 392"/>
+<text x="923" y="262" fill="#ff7b72" font-size="8" font-family="monospace">alert</text>
+
+<!-- 11. GitHub Actions → Grafana Cloud (annotate deployment) -->
+<path class="flow f-purple" marker-end="url(#a-purple)"
+  d="M 128 28 C 400 6 720 34 734 68"/>
+<text x="420" y="10" text-anchor="middle" fill="#bc8cff" font-size="8" font-family="monospace">annotate deployment</text>
+
+<!-- 12. AI → runbook-mcp (MCP via cloudflared tunnel) -->
+<path class="flow f-teal" marker-end="url(#a-teal)"
+  d="M 906 214 C 760 214 760 490 720 490 C 680 490 600 400 490 390 C 380 380 260 370 206 368"/>
+<text x="680" y="500" text-anchor="middle" fill="#39d0d8" font-size="8" font-family="monospace">get_runbook()</text>
+<text x="680" y="511" text-anchor="middle" fill="#2e8f96" font-size="7" font-family="monospace">cloudflared tunnel</text>
+
+<!-- Port labels -->
+<text x="440" y="434" fill="#1f4060" font-size="8" font-family="monospace">:6443 API · :30080 products · :30081 cart · :30090 argocd</text>
+
+</svg>
+
+<div class="legend">
+  <div class="leg" style="color:#4fc3f7"><div class="leg-line" style="background:#4fc3f7"></div>metrics scrape</div>
+  <div class="leg" style="color:#f0883e"><div class="leg-line" style="background:#f0883e"></div>HTTP probe</div>
+  <div class="leg" style="color:#bc8cff"><div class="leg-line" style="background:#bc8cff; height:3px"></div>remote_write / API</div>
+  <div class="leg" style="color:#56d364"><div class="leg-line" style="background:#56d364"></div>GitOps / deploy</div>
+  <div class="leg" style="color:#ff7b72"><div class="leg-line" style="background:#ff7b72"></div>alerting</div>
+  <div class="leg" style="color:#39d0d8"><div class="leg-line" style="background:#39d0d8"></div>MCP / runbook</div>
+</div>
+<p class="hint">hover to highlight · click to open</p>
+</body>
+</html>

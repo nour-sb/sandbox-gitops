@@ -1,0 +1,79 @@
+// Scrape node-exporter for host CPU/memory/disk metrics
+prometheus.scrape "node_exporter" {
+  targets = [{
+    __address__ = "node-exporter:9100",
+  }]
+  forward_to = [prometheus.remote_write.grafana_cloud.receiver]
+  scrape_interval = "15s"
+}
+
+// Probe nginx via blackbox — HTTP up/down + latency
+prometheus.scrape "blackbox_nginx" {
+  targets = [{
+    __address__ = "blackbox:9115",
+    __metrics_path__ = "/probe",
+    __param_target = "http://nginx-service:80/",
+    __param_module = "http_2xx",
+    instance = "nginx-service",
+    job = "nginx-http",
+  }]
+  forward_to = [prometheus.remote_write.grafana_cloud.receiver]
+  scrape_interval = "10s"
+}
+
+// Probe products-api (k8s NodePort) via blackbox — canary health tracking
+prometheus.scrape "blackbox_products_api" {
+  targets = [{
+    __address__ = "blackbox:9115",
+    __metrics_path__ = "/probe",
+    __param_target = "http://k3s-server:30080/",
+    __param_module = "http_2xx",
+    instance = "products-api",
+    job = "products-api-http",
+  }]
+  forward_to = [prometheus.remote_write.grafana_cloud.receiver]
+  scrape_interval = "10s"
+}
+
+// Probe cart-api (k8s NodePort) via blackbox — dependency of products-api
+prometheus.scrape "blackbox_cart_api" {
+  targets = [{
+    __address__ = "blackbox:9115",
+    __metrics_path__ = "/probe",
+    __param_target = "http://k3s-server:30081/",
+    __param_module = "http_2xx",
+    instance = "cart-api",
+    job = "cart-api-http",
+  }]
+  forward_to = [prometheus.remote_write.grafana_cloud.receiver]
+  scrape_interval = "10s"
+}
+
+// Scrape kube-state-metrics for real pod/deployment/rollout telemetry
+prometheus.scrape "kube_state_metrics" {
+  targets = [{
+    __address__ = "k3s-server:30099",
+  }]
+  forward_to = [prometheus.remote_write.grafana_cloud.receiver]
+  scrape_interval = "15s"
+}
+
+// Scrape Alloy's own metrics
+prometheus.scrape "alloy_self" {
+  targets = [{
+    __address__ = "localhost:12345",
+  }]
+  forward_to = [prometheus.remote_write.grafana_cloud.receiver]
+  scrape_interval = "15s"
+}
+
+// Remote write to Grafana Cloud Mimir
+prometheus.remote_write "grafana_cloud" {
+  endpoint {
+    url = "https://prometheus-prod-37-prod-ap-southeast-1.grafana.net/api/prom/push"
+    basic_auth {
+      username = "3377316"
+      password = env("GRAFANA_CLOUD_TOKEN")
+    }
+  }
+}
