@@ -119,9 +119,6 @@ Any tool requiring manual approval triggers "Processing Limit Reached" immediate
 
 **Workaround:** Set all MCP tools to auto-approve.
 
-### L2 — Approval Window Requires Human Monitoring
-Terminal tool requires a Slack button click. Every `terminal_execute` call blocks until a human clicks Approve in the Slack thread. The limitation is purely operational: someone must be watching. Milestone 7 confirmed the full flow works when a human is present.
-
 ### L3 — AI Investigates Before Acting (not suppressible)
 Even with explicit runbook URL in alert description, AI ran redundant steps: `deep_search` for the runbook, `tool_search_tool_regex` to find the GitHub tool, `filesystem_list_projects` before terminal. Default cautious behavior that prompt engineering can reduce but not eliminate.
 
