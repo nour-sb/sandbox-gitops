@@ -107,9 +107,6 @@ Conversation triggered on thread `1784735397.939839`. Tunnel started fresh with 
 
 ## Limitations Discovered
 
-### L15 — PLR Is a Slack-Side Notification, Not a Hard Stop
-"Processing Limit Reached" in Slack does not mean the AI stopped. The backend conversation continues running after posting PLR. Slack bot and assistant backend are decoupled — the bot posts PLR when a response takes too long, but the actual processing continues and further messages (Explore links, approval buttons) can still appear in the thread afterward.
-
 ### L16 — AI Cannot Verify Its Own Remediation; May Claim False Success
 After calling push_files (or any action tool), the AI verifies recovery by checking downstream metrics (probe_success). If the metric is healthy for any reason — including a manual fix by a human — the AI will attribute it to its own action and declare success. It cannot check git history or verify a commit SHA. This produces false fix confirmations that look authoritative in the conversation log.
 
