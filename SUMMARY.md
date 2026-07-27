@@ -103,7 +103,7 @@ Explored connecting local kubectl/docker to the Assistant:
 |---|---|
 | **Metric confusion** | Assistant checked `up` not `probe_success` on first try — probe-based monitoring requires explicit metric naming in queries/runbooks |
 | **Auto-dashboard generation** | Assistant created a 6-panel dashboard directly in Grafana Cloud mid-investigation |
-| **Step limit is real** | ~10-20 tool calls max per request. Complex GitOps rollback (read runbook → find version → push commit) hits this |
+| **PLR with manual approval is a bug** | "Processing Limit Reached" fires instantly when any tool requires manual approval — even with an instant click (tested 2026-07-27). Auto-approve eliminates PLR entirely. Not a step count or timeout — broken approval flow, Grafana needs to fix. |
 | **IRM enrichment needs native alert linkage** | API-created IRM incidents don't auto-trigger enrichments — only alert-rule-fired incidents do |
 | **Bot anti-loop** | Grafana Assistant ignores Slack bot messages — requires real user token (`xoxp-`) to automate |
 | **GitHub MCP scope** | Has read + file push, no `workflow_dispatch` — direct file commits to gitops repo work as alternative |

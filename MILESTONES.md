@@ -113,12 +113,22 @@ Conversation triggered on thread `1784735397.939839`. Tunnel started fresh with 
 ### L16 — AI Cannot Verify Its Own Remediation; May Claim False Success
 After calling push_files (or any action tool), the AI verifies recovery by checking downstream metrics (probe_success). If the metric is healthy for any reason — including a manual fix by a human — the AI will attribute it to its own action and declare success. It cannot check git history or verify a commit SHA. This produces false fix confirmations that look authoritative in the conversation log.
 
-### L1 — PLR Is Triggered by Pending Approval Wait, Not Step Count
-**CORRECTED 2026-07-24.** The previously documented "~8 step limit" was wrong. PLR is triggered when the AI turn is paused waiting for human approval — the turn timeout fires while the AI is blocked on a button click, not after a fixed number of tool calls.
+### L1 — PLR With Manual Approval Is a Grafana Bug
+**CORRECTED TWICE — 2026-07-27.** Two prior theories have been disproved:
 
-**Evidence:** With all tools set to auto-approve (no human clicks required), the AI ran 10+ tool calls in a single turn across a multi-service dependency investigation with zero PLR. Same scenario with manual approval required → PLR at ~7 steps (turn timed out while waiting for click).
+- ~~"~8 step limit"~~ — wrong. Auto-approve runs 10+ tool calls with zero PLR.
+- ~~"Approval timeout"~~ — wrong. Instant approval (click within 2 seconds) still triggers PLR.
 
-**Implication:** Step count is not the limiting factor. Approval latency is. Auto-approving safe read tools and controlled write tools eliminates PLR entirely for those turns.
+**Evidence (2026-07-27 test):**
+- Thread A — auto-approve: full answer delivered in 2 seconds. No PLR.
+- Thread B — manual approve, clicked instantly: PLR fired at 2 seconds. Same elapsed time, different outcome.
+- Thread C — manual approve, waited 10+ min then clicked: PLR.
+
+Timing is identical between A and B — time is not the variable. The only difference is whether the tool requires a manual approval click or not.
+
+**Conclusion:** PLR triggered by manual approval is a bug in Grafana Assistant. The approval mechanism itself causes PLR to fire regardless of how quickly the user clicks. This is not a step count limit or a timeout — it is broken behavior in the approval flow that Grafana needs to fix.
+
+**Workaround:** Set all MCP tools to auto-approve. PLR does not occur with auto-approved tools.
 
 ### L2 — Approval Window Requires Human Monitoring
 Terminal tool requires a Slack button click. Every `terminal_execute` call blocks until a human clicks Approve in the Slack thread. The limitation is purely operational: someone must be watching. Milestone 7 confirmed the full flow works when a human is present.
