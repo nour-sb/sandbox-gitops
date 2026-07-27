@@ -122,8 +122,8 @@ Any tool requiring manual approval triggers "Processing Limit Reached" immediate
 ### L3 — AI Investigates Before Acting (not suppressible)
 Even with explicit runbook URL in alert description, AI ran redundant steps: `deep_search` for the runbook, `tool_search_tool_regex` to find the GitHub tool, `filesystem_list_projects` before terminal. Default cautious behavior that prompt engineering can reduce but not eliminate.
 
-### L4 — Terminal Commands Have No CLI Auto-Approve Flag
-`grafana-assistant tunnel connect --terminal` has no `--auto-approve` flag and no command allowlist. However, Grafana's per-tool approval settings (same UI as custom MCP tools) apply to tunnel tools — setting `terminal_execute` to auto-approve in Grafana eliminates the human click requirement. Without auto-approve configured in Grafana, every terminal call blocks on a human click and triggers PLR (see L1).
+### L4 — Terminal Approval Controlled by Grafana Tool Settings
+Tunnel `terminal_execute` follows the same approval model as all MCP tools: set to **Auto-approve** in Grafana (no human click required) or **Ask me first** (blocks on approval → triggers PLR per L1). No difference from custom MCP tools — the setting is in Grafana UI per-tool.
 
 ### L5 — GitHub MCP Missing `workflow_dispatch`
 Cannot trigger GitHub Actions workflows. Can only read/write files. GitOps rollback works via file push + Argo CD sync; direct workflow trigger does not.
