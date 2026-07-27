@@ -138,9 +138,6 @@ Conversation API returns hollow `{"type":"tool_use"}` records — all content, a
 ### L13 — PLR Thread Is Permanently Dead
 Once a thread hits "Processing Limit Reached," all subsequent @Grafana mentions in that thread return instant PLR regardless of question complexity. No recovery within the thread. Teams must re-trigger @Grafana in a fresh Slack thread.
 
-### L12 — Approval Window Is Narrow; Late Approvals Recorded But Not Executed
-The AI turn has a short execution window (~2.5 min). Approvals that arrive after the window closes are recorded and shown as "Approved by X" in the UI but produce no action. AI does not retry or resume. Human must re-trigger @Grafana. Also: if the AI hits the step limit before surfacing the approval button, no button appears — approved action never executes even if user clicks promptly.
-
 ### L6 — Anti-Bot-Loop Protection Hard-Coded
 Bot tokens (`xoxb-`) are silently ignored. Only human tokens (`xoxp-`) get real AI responses. Cannot fully automate the trigger side without impersonating a user.
 
