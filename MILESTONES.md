@@ -107,6 +107,13 @@ Conversation triggered on thread `1784735397.939839`. Tunnel started fresh with 
 
 ## Limitations Discovered
 
+### L17 — Production Actions Require Explicit User Prompts (@Mention Flow)
+When triggered via @Grafana mention (not an alert thread), the AI investigates and reports findings but stops short of taking action. Calling get_runbook, pushing a GitOps fix, or triggering a rollback each require a separate explicit instruction from the user. The AI does not autonomously decide to remediate — it waits for direction. This is intentional safety behavior, not a bug.
+
+**Pattern that works:** diagnose first (@Grafana investigate) → AI reports → user says "call get_runbook and fix it" → AI acts.
+
+**Contrast:** alert-triggered flow (alert annotation with `Call get_runbook("service")`) drives autonomous action without user prompts.
+
 ### L1 — PLR With Manual Approval Is a Grafana Bug
 Any tool requiring manual approval triggers "Processing Limit Reached" immediately — even when the user clicks approve within 2 seconds. Auto-approve eliminates PLR entirely for the same tool calls. This is broken behavior in the approval flow that Grafana needs to fix.
 
@@ -258,8 +265,8 @@ Push_files still requires human approval, still subject to the ~2.5 min window, 
 ## Milestone 11 — push_files Behavior, PLR Semantics, and False Fix Confirmation
 **Date:** 2026-07-24
 
-**M11-F1 — PLR is not a hard stop; backend conversation continues after posting it**
-Slack showed "Processing Limit Reached" at 20:10:44 (4 seconds after @Grafana), but conversation 9a8eecfb kept running for 43 more seconds: 9 tool calls across 6 LLM turns, finishing with push_files at 20:11:39. The Explore link was posted to Slack at 20:11:03 — 19 seconds AFTER the PLR message. PLR is a Slack-side notification (timeout/progress placeholder), not a signal that the AI stopped. Backend and Slack bot are decoupled.
+**M11-F1 — PLR appeared non-terminal during one auto-investigation test; later confirmed as hard stop**
+In this test, an Explore link was posted 19 seconds after PLR. However, subsequent testing on 2026-07-27 (threads 1785157815, 1785156278) showed PLR is a hard stop for explicit @Grafana triggers — no messages appear in the thread after PLR fires, reply_count stays at 2. The M11 behavior may have been specific to an auto-investigation flow running in parallel. For explicit @Grafana-triggered turns, PLR = no further output.
 
 **M11-F2 — push_files was called and approved; push silently did not land**
 push_files was called at 20:11:39, user approved instantly, tool_result came back — but no commit appeared on GitHub. All commits in `nour-sb/sandbox-gitops` are user-authored. The GitHub MCP token may lack write access, or push_files fails silently for another reason. The AI received a result it interpreted as success.
@@ -301,8 +308,8 @@ When description says `owner=nour-sb, repo=sandbox-gitops, path=runbooks/...` �
 **M12-F3 — GitHub write confirmed; AI committed fix autonomously**
 Commit `81c7fb5` (`fix: restore fake-service replicas to 4 (incident recovery)`) was pushed by the AI with no human intervention. PAT header was the fix. Full e2e: alert → `get_runbook` (custom MCP, auto-approved) → read rollout.yaml → `push_files` (auto-approved) → commit lands → Argo CD syncs → alert resolves.
 
-**M12-F4 — PLR root cause confirmed: approval wait, not step count**
-With auto-approve on all tools: AI ran 10+ tool calls in a single turn with zero PLR across a multi-service dependency chain (backend-api + fake-service). With manual approval required: PLR fired at ~7 steps because the turn timer expired while waiting for the human click. **Step count is not the limit. Approval latency is.**
+**M12-F4 — Auto-approve eliminates PLR; manual approval triggers it as a bug**
+With auto-approve on all tools: AI ran 10+ tool calls in a single turn with zero PLR across a multi-service dependency chain. With manual approval required: PLR fired immediately — even with instant approval clicks (tested 2026-07-27). PLR with manual approval is a broken approval flow in Grafana, not a step count or latency issue. See L1.
 
 **M12-F5 — "Try again" after PLR works; "yes" after PLR does not**
 After PLR on turn 1 (investigation exhausted budget), saying "try again" → AI uses existing context, skips re-investigation, goes straight to fix → succeeds. Saying "yes" (to confirm a pending action) → AI re-runs full investigation → PLR again. Phrasing matters: continuation ("try again") vs confirmation ("yes") produce different re-entry behaviors.
@@ -454,16 +461,40 @@ The explicit tool-call syntax is not treated as an instruction — it's parsed a
 
 ---
 
+## Milestone 18 — push_files Confirmed Working + Explicit Prompt Requirement
+**Date:** 2026-07-27
+
+Test: committed `replicas: 0` to `manifests/products-api.yaml` → Argo CD synced → 0 pods → probe down. Triggered @Grafana in fresh thread; GitHub MCP set to auto-approve.
+
+**Findings:**
+
+**M18-F1 — push_files works end-to-end with auto-approve + PAT**
+AI pushed commit `298c146` (`fix: restore products-api replicas to 3`) to `nour-sb/sandbox-gitops` with zero human clicks. Argo CD synced → 3 pods Running → probe_success = 1. Confirms L16 was wrong: AI attribution was accurate, push was real.
+
+**M18-F2 — @Mention flow requires explicit prompt for each production action**
+Without a specific instruction, AI investigated, reported probe_success = 0 for 19h, and stopped. Did not call get_runbook or push a fix autonomously. Required two separate prompts: "call get_runbook and fix it" → AI read runbook but stopped. "push spec.replicas: 3 to manifests/products-api.yaml" → AI pushed. Investigation is autonomous; action is not.
+
+**M18-F3 — AI attribution was correct when push succeeded**
+AI declared "Pushed. Commit 298c146..." and the commit exists on GitHub. No false confirmation. Correct behavior.
+
+---
+
 ## Bottom Line
 
-Grafana AI handles **investigation, root cause analysis, and autonomous remediation** end-to-end — confirmed in Milestones 7 and 12.
+Grafana AI handles **investigation and root cause analysis** autonomously. **Remediation requires explicit human prompts** — confirmed in Milestones 7, 12, and 18.
 
-**With auto-approve + PAT write access:**
-- Alert fires → AI reads runbook (custom MCP, auto-approved) → pushes GitOps fix (auto-approved) → Argo CD syncs → alert resolves
-- No human intervention required for the full cycle
+**Alert-triggered flow (annotation-driven):**
+- Alert fires → AI reads runbook via annotation hint (`Call get_runbook("service")`) → pushes GitOps fix (auto-approved) → Argo CD syncs → alert resolves
+- With auto-approve + PAT write access: no human clicks required
 - Multi-service dependency chains handled correctly (10+ tool calls, no PLR)
 
-**PLR is not a step limit — it is an approval timeout.** Auto-approving tools eliminates PLR entirely. Manual approval blocks the AI turn until clicked; if the click is late, the turn times out and the thread dies.
+**@Mention-triggered flow:**
+- AI investigates and reports findings
+- Does NOT autonomously call get_runbook or push fixes
+- Each production action (get_runbook, push_files, rollback) requires an explicit user instruction in the thread
+- Investigation is free-running; action is gated on human direction
+
+**PLR with manual approval is a Grafana bug.** Auto-approving tools eliminates PLR entirely. PLR threads are permanently dead — re-trigger in a fresh thread.
 
 **Production setup requirements:**
 - GitHub MCP: add `Authorization: Bearer <PAT>` header with `repo` scope (OAuth alone is read-only)
@@ -472,4 +503,4 @@ Grafana AI handles **investigation, root cause analysis, and autonomous remediat
 - After PLR: say "try again" not "yes" — triggers continuation, not re-investigation
 - PLR threads are permanently dead: re-trigger in a fresh thread
 
-**Realistic production use case:** Fully autonomous GitOps remediation for known failure modes. Human oversight via Slack thread audit + Grafana conversation log. Manual approval only for novel or high-risk actions.
+**Realistic production use case:** Alert-triggered annotation-driven flow handles known failure modes autonomously. @Mention flow is for ad-hoc investigation + human-directed remediation. Both benefit from auto-approve and PAT write access.
