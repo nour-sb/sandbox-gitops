@@ -196,7 +196,7 @@ AI used `get_file_contents` first. When file already matched desired state, it s
 grafana-test (Editor, with GitHub write access) clicked Approve — silently ignored. programmernour (conversation owner) clicked Approve — recorded. The approval attribution label in Slack shows the owner's email. Non-owner approvals produce no action and no feedback to the user.
 
 **M9-F4 — GitOps push reachable; silently failed due to read-only OAuth scope**
-AI reaches `push_files` at step 7. push_files was called, user approved, tool_result received — but no commit appeared on GitHub. Root cause: GitHub MCP was authenticated via Grafana OAuth which only requests read scope, despite the user authorizing as `nour-sb`. **Fix:** add `Authorization: Bearer <PAT>` HTTP header with `repo` scope to the GitHub MCP config in Grafana. With PAT header added, push_files succeeds — confirmed by commit `81c7fb5` authored by AI. The previously assumed "~8 step hard limit blocking push_files" was incorrect — push_files IS reachable; the blocker was a permissions issue, not step count.
+AI reaches `push_files` at step 7. push_files was called, user approved, tool_result received — but no commit appeared on GitHub. Root cause: GitHub MCP was authenticated via Grafana OAuth which only requests read scope, despite the user authorizing as `nour-sb`. **Fix:** add `Authorization: Bearer <PAT>` HTTP header with `repo` scope to the GitHub MCP config in Grafana. With PAT header added, push_files succeeds — confirmed by commit `81c7fb5` authored by AI.
 
 ---
 
