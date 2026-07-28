@@ -141,9 +141,6 @@ Once a thread hits "Processing Limit Reached," all subsequent @Grafana mentions 
 ### L6 — Anti-Bot-Loop Protection Hard-Coded
 Bot tokens (`xoxb-`) are silently ignored. Only human tokens (`xoxp-`) get real AI responses. Cannot fully automate the trigger side without impersonating a user.
 
-### L9 — Tunnel Execution Is Silent
-`grafana-assistant tunnel connect --terminal` executes approved commands with no stdout output. Cannot monitor command execution from the terminal. Ground truth: `kubectl get events` on the cluster.
-
 ### L7 — Conversation Logs User-Scoped
 `gcx assistant conversation list` returns `[]` with a service account token. Only the OAuth user who owns the conversation can read logs. Limits observability in automated/CI contexts.
 
