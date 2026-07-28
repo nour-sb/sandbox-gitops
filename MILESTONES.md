@@ -76,7 +76,7 @@ Tool call sequence (6 steps — improved from 7):
 5. `mcp_github-get_file_contents` — read runbook from `nour-sb/sandbox-gitops`
 6. `mcp_assistant_tunnel-terminal_execute` — sent `docker exec k3s-server /bin/kubectl-argo-rollouts undo fake-service -n default`
 
-**Result:** Approval button appeared in Slack. `toolResult: null` because nobody clicked it (conversation timed out after ~2.5 min). No "Processing Limit Reached" — step budget was not the bottleneck. AI executed correctly end-to-end.
+**Result:** Approval button appeared in Slack. `toolResult: null` because nobody clicked it. No "Processing Limit Reached" — step budget was not the bottleneck. AI executed correctly end-to-end.
 
 ---
 
@@ -195,9 +195,6 @@ AI used `get_file_contents` first. When file already matched desired state, it s
 **M9-F2 — Tool approval gated to conversation owner only**
 grafana-test (Editor, with GitHub write access) clicked Approve — silently ignored. programmernour (conversation owner) clicked Approve — recorded. The approval attribution label in Slack shows the owner's email. Non-owner approvals produce no action and no feedback to the user.
 
-**M9-F3 — Approval window is narrow; late approvals are no-ops**
-Approval recorded after the AI turn window closed (~2.5 min) showed "Approved by X" in UI but did not execute. AI does not resume or retry. Human must re-trigger @Grafana to get a new executable turn.
-
 **M9-F4 — GitOps push reachable; silently failed due to read-only OAuth scope**
 AI reaches `push_files` at step 7. push_files was called, user approved, tool_result received — but no commit appeared on GitHub. Root cause: GitHub MCP was authenticated via Grafana OAuth which only requests read scope, despite the user authorizing as `nour-sb`. **Fix:** add `Authorization: Bearer <PAT>` HTTP header with `repo` scope to the GitHub MCP config in Grafana. With PAT header added, push_files succeeds — confirmed by commit `81c7fb5` authored by AI. The previously assumed "~8 step hard limit blocking push_files" was incorrect — push_files IS reachable; the blocker was a permissions issue, not step count.
 
@@ -227,9 +224,6 @@ Unlike tunnel terminal commands (always require human click), custom MCP tools s
 
 **M10-F3 — AI surfaced push_files in 5 visible steps (vs 6 in prior runs)**
 Whether or not `get_runbook` was called, the AI reached the correct recovery action faster than the GitHub-only baseline. Hypothesis: auto-approved tools don't consume visible step budget — they execute silently and the AI continues without a user-facing "Working on it..." step.
-
-**M10-F4 — Same push approval problem applies**
-Push_files still requires human approval, still subject to the ~2.5 min window, and the conversation API still strips the push payload. No change from Milestone 9.
 
 ---
 
