@@ -164,9 +164,6 @@ Editor-level Grafana accounts receive the same quality AI responses as Admin. Ro
 **M8-F2 — Thread attributes to first caller; shared context window for all users**
 The Slack thread is the AI's context window — any user who posts @Grafana in the thread continues the same conversation with full prior context. However, the conversation record is attributed entirely to whoever first triggered @Grafana. grafana-test posted @Grafana in the thread and got a full AI response, but had zero conversation records in their assistant history. Programmernour (first caller) owns the conversation log. Token usage is charged per user per turn: the jumping-in user's usage dashboard showed increased token consumption for their response, not the first caller's. Conversation ownership and token billing are split — conversation log goes to first caller, tokens go to whoever triggered the response.
 
-**M8-F4 — Invite flow requires Grafana.com account creation**
-Grafana Cloud org invites go through Grafana.com OAuth — no local user creation possible. Invited user must create a Grafana.com account via the invite link (password-based signup works; Google SSO requires a real Google account).
-
 ---
 
 ## Milestone 9c — PLR Thread Is Permanently Dead
