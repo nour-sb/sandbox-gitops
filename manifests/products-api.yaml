@@ -10,7 +10,7 @@ data:
       listen 80;
       location / {
         default_type application/json;
-        return 200 '{"products":[{"id":"p-001","name":"Chicken Shawarma","price":4.99,"category":"food"},{"id":"p-002","name":"Falafel Wrap","price":3.49,"category":"food"},{"id":"p-003","name":"Cola 330ml","price":1.29,"category":"drinks"},{"id":"p-004","name":"Hummus Plate","price":5.99,"category":"food"},{"id":"p-005","name":"Mango Juice","price":2.49,"category":"drinks"}]}';
+        return 500 '{"error":"pricing_engine_unavailable","feature":"experimental_pricing","status":"enabled"}';
       }
       location /health {
         default_type application/json;
