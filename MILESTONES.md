@@ -166,15 +166,6 @@ The Slack thread is the AI's context window — any user who posts @Grafana in t
 
 ---
 
-## Milestone 9c — PLR Thread Is Permanently Dead
-**Date:** 2026-07-23
-
-Posted a trivial question ("what is the current status of fake-service?") to thread `1784817898.059649` which had previously hit "Processing Limit Reached." AI responded with PLR instantly — no investigation steps taken, no "Working on it..." indicator.
-
-**Finding: Once a thread hits PLR, it is permanently exhausted.** Subsequent @Grafana mentions in the same thread return instant PLR regardless of question simplicity. The only recovery is a new Slack thread (new alert notification or new top-level message). This makes PLR a hard stop for an incident thread — teams must know to re-trigger @Grafana in a fresh context.
-
----
-
 ## Milestone 9b — Investigation Turns Have No Step Limit
 **Date:** 2026-07-23
 
