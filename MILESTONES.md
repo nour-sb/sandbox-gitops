@@ -195,8 +195,8 @@ AI used `get_file_contents` first. When file already matched desired state, it s
 **M9-F2 — Tool approval gated to conversation owner only**
 grafana-test (Editor, with GitHub write access) clicked Approve — silently ignored. programmernour (conversation owner) clicked Approve — recorded. The approval attribution label in Slack shows the owner's email. Non-owner approvals produce no action and no feedback to the user.
 
-**M9-F4 — GitOps push reachable; silently failed due to read-only OAuth scope**
-AI reaches `push_files` at step 7. push_files was called, user approved, tool_result received — but no commit appeared on GitHub. Root cause: GitHub MCP was authenticated via Grafana OAuth which only requests read scope, despite the user authorizing as `nour-sb`. **Fix:** add `Authorization: Bearer <PAT>` HTTP header with `repo` scope to the GitHub MCP config in Grafana. With PAT header added, push_files succeeds — confirmed by commit `81c7fb5` authored by AI.
+**M9-F4 — GitOps push reachable; silently failed — GitHub App not installed**
+AI reaches `push_files` at step 7. push_files was called, user approved, tool_result received — but no commit appeared on GitHub. Root cause: GitHub MCP uses `api.githubcopilot.com/mcp` (GitHub Copilot MCP). Grafana Assistant is a GitHub App — authorization alone (user-to-server token, identity only) grants zero repo permissions. The app was not *installed* on `nour-sb`, so it had no access to any repo. Public repo reads worked because they are unauthenticated; private repos and all writes require installation. **Fix (PAT workaround):** add `Authorization: Bearer <PAT>` HTTP header to the GitHub MCP config — bypasses the GitHub App entirely. **Fix (native):** install Grafana Assistant GitHub App on your account via `github.com/apps/grafana-assistant/installations/new` — no PAT needed, works for PAT-disabled orgs. Confirmed by commit `abacccd` pushed by AI with zero headers, installation only.
 
 ---
 
@@ -296,16 +296,41 @@ Grafana MCP registration has a scope selector. "Only Me" confirmed to work (tool
 
 ---
 
-## Milestone 13 — push_files Silently Failed Without PAT (OAuth Read-Only)
+## Milestone 13 — push_files Silently Failed Without GitHub App Installation
 **Date:** 2026-07-24
 
-Multiple push_files calls failed silently when using GitHub Copilot MCP (`api.githubcopilot.com/mcp`) authenticated via Grafana OAuth. The user was authenticated as `nour-sb` (confirmed via GitHub OAuth consent screen) but write operations failed with "generic tool error."
+Multiple push_files calls failed silently when using GitHub Copilot MCP (`api.githubcopilot.com/mcp`). Write operations failed with "generic tool error."
 
-**Root cause:** Grafana's OAuth app for GitHub only requests read scopes. The user authorizes as themselves but Grafana never requests `repo` write scope — so the token is valid but read-only.
+**Root cause:** Grafana Assistant is a GitHub App. The user had *authorized* it (user-to-server token = identity only) but never *installed* it on `nour-sb`. Without installation, the app has zero repo permissions — authorization and installation are separate steps. Public repo reads worked via unauthenticated GitHub API; private repos and all writes require installation.
 
-**Fix:** Add `Authorization: Bearer <PAT>` HTTP header to the MCP config. PAT with `repo` scope bypasses the OAuth token and grants write access. Commit `81c7fb5` confirmed the fix works.
+**Fix (PAT workaround):** Add `Authorization: Bearer <PAT>` HTTP header to the GitHub MCP config in Grafana. PAT bypasses the GitHub App entirely and grants write access directly.
 
-**Implication for production:** Any team using Grafana AI GitHub MCP for GitOps push must add a PAT header. The OAuth flow alone is insufficient for write operations regardless of the authorizing user's repo permissions.
+**Fix (native — confirmed 2026-07-28):** Install Grafana Assistant GitHub App via `github.com/apps/grafana-assistant/installations/new`. No PAT, no header needed. Commit `abacccd` pushed by AI using installation-only auth.
+
+**Implication for production:** The setup screen in Grafana only prompts for OAuth authorization — never for installation. Users can connect GitHub and still have zero repo write access. Grafana should surface the install URL in their setup flow. PAT-disabled orgs must use the GitHub App installation path.
+
+---
+
+## Milestone 20 — GitHub App Installation: Native Write Access Without PAT
+**Date:** 2026-07-28
+
+Discovered and confirmed the correct GitHub write access path for Grafana AI — no PAT required.
+
+**Background:** M9-F4 and M13 documented push_files failing silently. The assumed root cause ("OAuth read-only scope") was wrong. Real root cause: Grafana Assistant is a GitHub App. GitHub Apps require two separate steps — **authorization** (identity, user-to-server token) and **installation** (repo permissions). Grafana's setup flow only prompts for authorization, silently leaving users with zero repo access.
+
+**Findings:**
+
+**M20-F1 — GitHub App install URL resolves the write blocker**
+`github.com/apps/grafana-assistant/installations/new` — standard GitHub Apps pattern, not documented by Grafana or surfaced in their setup UI. Once installed on `nour-sb`, AI pushed commit `abacccd` with zero headers or PAT. Confirmed working.
+
+**M20-F2 — Private repos make the GitHub MCP tool disappear entirely**
+When `sandbox-gitops` was set to private (before installation), Grafana AI responded: "No GitHub access tool is configured." The entire tool vanishes — not just a permission error on the file. Public repo reads work unauthenticated; private repos need installation for any access.
+
+**M20-F3 — Authorization ≠ installation; Grafana's setup flow misleads users**
+Grafana's GitHub integration prompts for OAuth authorization only. "Authorized GitHub Apps" shows Grafana listed with "Never used" — no indication that a separate install step is needed for repo access. Users who complete the setup flow believe GitHub is connected; it is not for any repo operation beyond public reads.
+
+**M20-F4 — PAT-disabled orgs are unblocked via GitHub App installation**
+Organizations with PAT disabled by policy can use the GitHub App installation path instead. No PAT header needed. This is the correct production path.
 
 ---
 
